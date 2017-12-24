@@ -13,6 +13,7 @@ the [object spread](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Refe
 $ npm install -g create-react-app
 $ create-react-app game
 $ cd game
+$ npm install --save boardgame.io
 ```
 
 ## Define moves
@@ -101,23 +102,24 @@ const TicTacToe = Game({
     clickCell(G, ctx, id) {
       const cells = [...G.cells];
 
-      // Ensure we can overwrite cells.
+      // Ensure we can't overwrite cells.
       if (cells[id] === null) {
         cells[id] = ctx.currentPlayer;
       }
 
-      // Set winner to true if the current
-      // player just won.
-      let winner = null;
-      if (IsVictory(cells)) {
-        winner = ctx.currentPlayer;
-      }
-
-      return { ...G, cells, winner };
+      return { ...G, cells };
     }
+  },
+
+  victory: (G, ctx) => {
+    return IsVictory(G.cells) ? ctx.currentPlayer : null;
   }
 });
 ```
+
+!> The `victory` field takes a function that determines if
+   there is a winner. The winner itself is made available
+   at `ctx.winner`.
 
 ## Render board
 
@@ -134,16 +136,22 @@ import React from 'react';
 
 class TicTacToeBoard extends React.Component {
   onClick(id) {
-    if (this.props.G.winner == null) {
+    if (this.isActive(id)) {
       this.props.moves.clickCell(id);
       this.props.endTurn();
     }
   }
 
+  isActive(id) {
+    if (this.props.ctx.winner !== null) return false;
+    if (this.props.G.cells[id] !== null) return false;
+    return true;
+  }
+
   render() {
     let winner = '';
-    if (this.props.G.winner !== null) {
-      winner = <div>Winner: {this.props.G.winner}</div>;
+    if (this.props.ctx.winner !== null) {
+      winner = <div>Winner: {this.props.ctx.winner}</div>;
     }
 
     const cellStyle = {
